@@ -1352,7 +1352,7 @@ static int handle_filelimit(size_t frames){
   int new_bytes=frames*bytes_per_frame*num_channels;
 
   if(is_using_wav && (disksize + ((int64_t)new_bytes) >= max_b_per_file-(1024*1024))){ // (1024*1024) should be enough for the header.
-    print_message("Limit on wav file almost reached. Will continue with new file");
+    print_message("Limit on wav file almost reached. Will continue with new file .");
     if (!rotate_file(frames, false)) return 0;
   }
 #if HAVE_LIBLO
@@ -2285,6 +2285,7 @@ static const char *advanced_help =
   "[--max-mb-per-file] or [-mbf]     -> Maximum file size in Mb.\n"
   "                                     When the maximum is (almost) reached, a new file is created.\n"
   "                                     The value includes room for a header of 1 Mb, so in practice files may be smaller.\n"
+  "                                     Default is 1024 Mb, which is 1 Gb."
   "[--osc] or [-O]                   -> Specify OSC port number to listen on. see --help-osc\n"
   "[--timestamp] or [-S]             -> create a FILENAME.tme file for each recording, storing\n"
   "                                     the system-time corresponding to the first audio sample.\n"
