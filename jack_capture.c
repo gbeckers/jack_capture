@@ -124,6 +124,8 @@ static int disk_errors=0;
 static bool soundfile_format_is_set=false;
 static char *soundfile_format="wav";
 static char *soundfile_format_one_or_two="wav";
+static int max_mb_per_file=1024;
+static int max_b_per_file=1024*1024*1024;
 #define ONE_OR_TWO_CHANNELS_FORMAT SF_FORMAT_WAV
 static char *soundfile_format_multi="wavex";
 #define MORE_THAN_TWO_CHANNELS_FORMAT SF_FORMAT_WAVEX
@@ -1349,8 +1351,8 @@ static int rotate_file(size_t frames, int reset_totals){
 static int handle_filelimit(size_t frames){
   int new_bytes=frames*bytes_per_frame*num_channels;
 
-  if(is_using_wav && (disksize + ((int64_t)new_bytes) >= UINT32_MAX-(1024*1024))){ // (1024*1024) should be enough for the header.
-    print_message("Warning. 4GB limit on wav file almost reached.");
+  if(is_using_wav && (disksize + ((int64_t)new_bytes) >= max_b_per_file-(1024*1024))){ // (1024*1024) should be enough for the header.
+    print_message("Limit on wav file almost reached. Will continue with new file");
     if (!rotate_file(frames, false)) return 0;
   }
 #if HAVE_LIBLO
@@ -2280,6 +2282,9 @@ static const char *advanced_help =
   "                                     Beware that you might risk overwriting an old file by using this option.\n"
   "                                     To only set prefix, use --filename-prefix / -fp instead.\n"
   "                                     (It's usually easier to set last argument instead of using this option)\n"
+  "[--max-mb-per-file] or [-mbf]     -> Maximum file size in Mb.\n"
+  "                                     When the maximum is (almost) reached, a new file is created.\n"
+  "                                     The value includes room for a header of 1 Mb, so in practice files may be smaller.\n"
   "[--osc] or [-O]                   -> Specify OSC port number to listen on. see --help-osc\n"
   "[--timestamp] or [-S]             -> create a FILENAME.tme file for each recording, storing\n"
   "                                     the system-time corresponding to the first audio sample.\n"
@@ -2384,6 +2389,7 @@ void init_arguments(int argc, char *argv[]){
       OPTARG("--channels","-c") num_channels = OPTARG_GETINT();
       OPTARG("--filename-prefix","-fp") filename_prefix = OPTARG_GETSTRING();
       OPTARG("--leading-zeros","-z") leading_zeros = OPTARG_GETINT();
+      OPTARG("--max-mb-per-file","-mbf") max_mb_per_file = OPTARG_GETINT();
       OPTARG("--recording-time","-d"){
         recording_time       = OPTARG_GETFLOAT();
         start_jack();
@@ -2443,6 +2449,12 @@ void init_arguments(int argc, char *argv[]){
 	  OPTARG("--jack-name","-jn") jackname=OPTARG_GETSTRING();
       OPTARG_LAST() base_filename=OPTARG_GETSTRING();
     }OPTARGS_END;
+
+  if (max_mb_per_file < 2){
+  	fprintf(stderr, "--max-mb-per-file or -mbf option should be 2 or higher.\n");
+  	exit(2);
+  }
+  max_b_per_file = max_mb_per_file * 1024 * 1024;
 
   if(use_jack_freewheel==true && use_jack_transport==true){
     fprintf(stderr,"--jack-transport and --jack-freewheel are mutually exclusive options.\n");
